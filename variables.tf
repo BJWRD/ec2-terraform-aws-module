@@ -11,7 +11,7 @@ variable "region" {
 variable "vpc_id" {
   type        = string
   description = "The VPC to deploy into"
-  default     = "vpc-08abb3cc149a54bd7"
+  default     = "vpc-025a976bcbce78ab9"
 }
 
 variable "private_subnet" {
@@ -42,12 +42,12 @@ variable "availability_zones" {
 
 variable "subnet_id" {
   type    = string
-  default = "aws_subnet.private_subnet.id"
+  default = "aws_subnet.private.id"
 }
 
 variable "aws_internet_gateway" {
   type    = string
-  default = "aws_internet_gateway.main.id"
+  default = "aws_internet_gateway.main"
 }
 
 variable "aws_eip" {
