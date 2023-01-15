@@ -3,10 +3,6 @@
 ################################################################################
 
 locals {
-  name_suffix = "ec2-terraform-aws-module-Dev-Environment"
-}
-
-locals {
   required_tags = {
     project     = "ec2-terraform-aws-module"
     environment = "Dev"
@@ -19,7 +15,7 @@ module "ec2_instance" {
 
   name = "EC2"
 
-  ami                    = "ami-0b5eea76982371e91"
+  ami                    = "ami-084e8c05825742534"
   instance_type          = "t2.nano"
   monitoring             = true
   vpc_security_group_ids = var.vpc_security_group_ids
