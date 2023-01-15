@@ -7,11 +7,6 @@ provider "aws" {
   region = var.region
 }
 
-# Determine all of the available availability zones in the current AWS region
-data "aws_availability_zones" "available" {
-  state = "available"
-}
-
 data "aws_vpc" "main" {
   filter {
     name   = "tag:Name"
@@ -22,6 +17,7 @@ data "aws_vpc" "main" {
 # Internet Gateway for the public subnet
 resource "aws_internet_gateway" "main" {
   vpc_id = var.vpc_id
+  depends_on = [data.aws_vpc.main, aws_subnet.public, aws_subnet.private]
 
   tags = merge(local.required_tags, { Name = "Internet-Gateway" })
 }
@@ -29,27 +25,46 @@ resource "aws_internet_gateway" "main" {
 # Elastic IP for NAT
 resource "aws_eip" "main" {
   vpc = true
-  depends_on = [var.aws_internet_gateway]
+  depends_on = [aws_route_table_association.public]
+
+  tags = merge(local.required_tags, { Name = "Elastic-IP" })
 }
 
 #NAT gateway for the public subnet
 resource "aws_nat_gateway" "main" {
-  allocation_id     = var.aws_eip
+  allocation_id     = aws_eip.main.id
   for_each          = var.public_subnet
-  subnet_id         = each.key
-  depends_on        = [var.aws_internet_gateway]
+  subnet_id         = aws_subnet.public[each.key].id
+  depends_on = [aws_eip.main]
 
   tags = merge(local.required_tags, { Name = "NAT-Gateway" })
 }
 
-# Route table for NAT Gateway
-resource "aws_route_table" "main" {
+# Route table for the Internet Gateway / Public Subnet
+resource "aws_route_table" "IGW" {
   vpc_id   = var.vpc_id
-  for_each = var.private_subnet
+  for_each = var.public_subnet
+  depends_on = [data.aws_vpc.main, aws_internet_gateway.main]
 
+  # NAT Rule
   route {
     cidr_block = var.cidr_block
-    gateway_id = aws_nat_gateway.main[each.key].id
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = merge(local.required_tags, { Name = "Route-Table" })
+}
+
+# Route table for the NAT Gateway / Private Subnet
+resource "aws_route_table" "NG" {
+  vpc_id   = var.vpc_id
+  for_each = var.private_subnet
+  depends_on = [aws_nat_gateway.main]
+
+  # NAT Rule
+  route {
+    cidr_block = var.cidr_block
+    nat_gateway_id = aws_nat_gateway.main[each.key].id
   }
 
   tags = merge(local.required_tags, { Name = "Route-Table" })
@@ -57,35 +72,41 @@ resource "aws_route_table" "main" {
 
 #Route table associations - Private
 resource "aws_route_table_association" "private" {
-  subnet_id      = each.key
+  subnet_id      = aws_subnet.private[each.key].id
   for_each       = var.private_subnet
-  route_table_id = aws_route_table.main[each.key].id
+  route_table_id = aws_route_table.NG[each.key].id
+  depends_on = [aws_route_table.NG]
 }
 
 #Route table associations - Public
 resource "aws_route_table_association" "public" {
-  subnet_id      = each.key
+  subnet_id      = aws_subnet.public[each.key].id
   for_each       = var.public_subnet
-  route_table_id = aws_route_table.main[each.key].id
+  route_table_id = aws_route_table.IGW[each.key].id
+  depends_on = [data.aws_vpc.main, aws_subnet.public, aws_subnet.private, aws_route_table.IGW]
 }
 
 #Public subnet
 resource "aws_subnet" "public" {
-  for_each          = data.aws_availability_zones.available
+  for_each          = var.public_subnet
   vpc_id            = data.aws_vpc.main.id
-  cidr_block        = var.cidr_block
+  cidr_block        = each.value
   availability_zone = each.key
-  map_public_ip_on_launch = true
+  map_public_ip_on_launch = true #makes this a public subnet
+  depends_on = [data.aws_vpc.main]
+
   tags              = merge(local.required_tags, { Name = "Public-Subnet" })
 }
 
 #Private subnet
 resource "aws_subnet" "private" {
-  for_each          = data.aws_availability_zones.available
+  for_each          = var.private_subnet
   vpc_id            = data.aws_vpc.main.id
-  cidr_block        = var.cidr_block
+  cidr_block        = each.value
   availability_zone = each.key
   map_public_ip_on_launch = false
+  depends_on = [data.aws_vpc.main, aws_subnet.public]
+
   tags              = merge(local.required_tags, { Name = "Private-Subnet" })
 }
 
