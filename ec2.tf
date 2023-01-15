@@ -23,7 +23,7 @@ module "ec2_instance" {
   instance_type          = "t2.nano"
   monitoring             = true
   vpc_security_group_ids = var.vpc_security_group_ids
-  subnet_id              = aws_subnet.main[each.key].id
+  subnet_id              = var.subnet_id
   #key_name - allows private key (.pem file) to be used with ec2 instance
   key_name = "terraform"
 
