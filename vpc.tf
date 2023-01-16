@@ -14,78 +14,6 @@ data "aws_vpc" "main" {
   }
 }
 
-# Internet Gateway for the public subnet
-resource "aws_internet_gateway" "main" {
-  vpc_id = var.vpc_id
-  depends_on = [data.aws_vpc.main, aws_subnet.public, aws_subnet.private]
-
-  tags = merge(local.required_tags, { Name = "Internet-Gateway" })
-}
-
-# Elastic IP for NAT
-resource "aws_eip" "main" {
-  vpc = true
-  depends_on = [aws_route_table_association.public]
-
-  tags = merge(local.required_tags, { Name = "Elastic-IP" })
-}
-
-#NAT gateway for the public subnet
-resource "aws_nat_gateway" "main" {
-  allocation_id     = aws_eip.main.id
-  for_each          = var.public_subnet
-  subnet_id         = aws_subnet.public[each.key].id
-  depends_on = [aws_eip.main]
-
-  tags = merge(local.required_tags, { Name = "NAT-Gateway" })
-}
-
-# Route table for the Internet Gateway / Public Subnet
-resource "aws_route_table" "IGW" {
-  vpc_id   = var.vpc_id
-  for_each = var.public_subnet
-  depends_on = [data.aws_vpc.main, aws_internet_gateway.main]
-
-  # NAT Rule
-  route {
-    cidr_block = var.cidr_block
-    gateway_id = aws_internet_gateway.main.id
-  }
-
-  tags = merge(local.required_tags, { Name = "Route-Table" })
-}
-
-# Route table for the NAT Gateway / Private Subnet
-resource "aws_route_table" "NG" {
-  vpc_id   = var.vpc_id
-  for_each = var.private_subnet
-  depends_on = [aws_nat_gateway.main]
-
-  # NAT Rule
-  route {
-    cidr_block = var.cidr_block
-    nat_gateway_id = aws_nat_gateway.main[each.key].id
-  }
-
-  tags = merge(local.required_tags, { Name = "Route-Table" })
-}
-
-#Route table associations - Private
-resource "aws_route_table_association" "private" {
-  subnet_id      = aws_subnet.private[each.key].id
-  for_each       = var.private_subnet
-  route_table_id = aws_route_table.NG[each.key].id
-  depends_on = [aws_route_table.NG]
-}
-
-#Route table associations - Public
-resource "aws_route_table_association" "public" {
-  subnet_id      = aws_subnet.public[each.key].id
-  for_each       = var.public_subnet
-  route_table_id = aws_route_table.IGW[each.key].id
-  depends_on = [data.aws_vpc.main, aws_subnet.public, aws_subnet.private, aws_route_table.IGW]
-}
-
 #Public subnet
 resource "aws_subnet" "public" {
   for_each          = var.public_subnet
@@ -108,6 +36,78 @@ resource "aws_subnet" "private" {
   depends_on = [data.aws_vpc.main, aws_subnet.public]
 
   tags              = merge(local.required_tags, { Name = "Private-Subnet" })
+}
+
+#Internet Gateway for the Public Subnet
+resource "aws_internet_gateway" "main" {
+  vpc_id = var.vpc_id
+  depends_on = [data.aws_vpc.main, aws_subnet.public, aws_subnet.private]
+
+  tags = merge(local.required_tags, { Name = "Internet-Gateway" })
+}
+
+#Route table for the Internet Gateway / Public Subnet
+resource "aws_route_table" "IGW" {
+  vpc_id   = var.vpc_id
+  for_each = var.public_subnet
+  depends_on = [data.aws_vpc.main, aws_internet_gateway.main]
+
+  # NAT Rule
+  route {
+    cidr_block = var.cidr_block
+    gateway_id = aws_internet_gateway.main.id
+  }
+
+  tags = merge(local.required_tags, { Name = "Route-Table" })
+}
+
+#Route table associations - Public
+resource "aws_route_table_association" "public" {
+  subnet_id      = aws_subnet.public[each.key].id
+  for_each       = var.public_subnet
+  route_table_id = aws_route_table.IGW[each.key].id
+  depends_on = [data.aws_vpc.main, aws_subnet.public, aws_subnet.private, aws_route_table.IGW]
+}
+
+# Elastic IP for NAT Gateway
+resource "aws_eip" "main" {
+  vpc = true
+  depends_on = [aws_route_table_association.public]
+
+  tags = merge(local.required_tags, { Name = "Elastic-IP" })
+}
+
+#NAT Gateway for the Public Subnet
+resource "aws_nat_gateway" "main" {
+  allocation_id     = aws_eip.main.id
+  for_each          = var.public_subnet
+  subnet_id         = aws_subnet.public[each.key].id
+  depends_on = [aws_eip.main]
+
+  tags = merge(local.required_tags, { Name = "NAT-Gateway" })
+}
+
+#Route table for the NAT Gateway / Private Subnet
+resource "aws_route_table" "NG" {
+  vpc_id   = var.vpc_id
+  for_each = var.private_subnet
+  depends_on = [aws_nat_gateway.main]
+
+  # NAT Rule
+  route {
+    cidr_block = var.cidr_block
+    nat_gateway_id = aws_nat_gateway.main[each.key].id
+  }
+
+  tags = merge(local.required_tags, { Name = "Route-Table" })
+}
+
+#Route table associations - Private
+resource "aws_route_table_association" "private" {
+  subnet_id      = aws_subnet.private[each.key].id
+  for_each       = var.private_subnet
+  route_table_id = aws_route_table.NG[each.key].id
+  depends_on = [aws_route_table.NG]
 }
 
 #EC2 Instance Security Group
