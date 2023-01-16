@@ -2,6 +2,31 @@
 # vpc.tf
 ################################################################################
 
+locals {
+  required_tags = {
+    project     = "ec2-terraform-aws-module"
+    environment = "Dev"
+  }
+  
+  ingress_rules = [{
+      port        = 80
+      description = "Allow HTTP access"
+  },
+  {
+      port        = 443
+      description = "Allow HTTPS access"
+  },
+  {
+      port        = 22
+      description = "Allow SSH access"
+  },
+  
+  egress_rules = [{
+      port        = 0
+      description = "All all Egress traffic"
+  },
+}
+
 # VPC
 provider "aws" {
   region = var.region
@@ -117,35 +142,30 @@ resource "aws_security_group" "main" {
   description = "Security Group for EC2 Host"
   vpc_id      = var.vpc_id
 
-  ingress {
-    from_port   = 22
-    to_port     = 22
-    protocol    = "tcp"
-    cidr_blocks = [var.cidr_block]
-    description = "Allows SSH access"
+  dynamic "ingress" {
+    for_each = local.ingress_rules
+    
+    content {
+      description = ingress.value.description
+      from_port   = ingress.value.port
+      to_port     = ingress.value.port
+      protocol    = "tcp"
+      cidr_blocks = [var.cidr_block]
+      
+    }
   }
-
-  ingress {
-    from_port   = 80
-    to_port     = 80
-    protocol    = "tcp"
-    cidr_blocks = [var.cidr_block]
-    description = "Allows HTTP access"
-  }
-
-  ingress {
-    from_port   = 8080
-    to_port     = 8080
-    protocol    = "tcp"
-    cidr_blocks = [var.cidr_block]
-    description = "Allows HTTPS access"
-  }
-
-  egress {
-    from_port   = 0
-    to_port     = 0
-    protocol    = "-1"
-    cidr_blocks = [var.cidr_block]
+  
+  dynamic "egress" {
+   for_each = local.egress_rules
+    
+   content {
+     description = egress.value.description
+     from_port   = egress.value.port
+     to_port     = egress.value.port
+     protocol    = "tcp"
+     cidr_blocks = [var.cidr_block]
+      
+   }
   }
 
   tags = merge(local.required_tags, { Name = "EC2-Security_Group" })
