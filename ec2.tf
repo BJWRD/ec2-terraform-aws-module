@@ -2,13 +2,6 @@
 # ec2.tf
 ################################################################################
 
-locals {
-  required_tags = {
-    project     = "ec2-terraform-aws-module"
-    environment = "Dev"
-  }
-}
-
 module "ec2_instance" {
   source  = "terraform-aws-modules/ec2-instance/aws"
   version = "~> 3.0"
