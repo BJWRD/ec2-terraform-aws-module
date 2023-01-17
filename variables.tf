@@ -42,14 +42,8 @@ variable "availability_zones" {
 
 variable "aws_internet_gateway" {
   description = "The AWS Internet Gateway resource"
-  type    = string
-  default = "aws_internet_gateway.main"
-}
-
-variable "aws_eip" {
-  description = "The EIP ID"
-  type = string
-  default = "aws_eip.main.id"
+  type        = string
+  default     = "aws_internet_gateway.main"
 }
 
 variable "cidr_block" {
@@ -70,8 +64,20 @@ variable "vpc_security_group_ids" {
   default     = null
 }
 
-variable "subnet_id" {
-  description = "The VPC Subnet ID to launch in"
-  type    = string
-  default = "aws_subnet.private.id"
+variable "ec2_name" {
+  description = "Name of EC2 instance"
+  type        = string
+  default     = "EC2-Dev"
+}
+
+variable "ami_type" {
+  description = "AMI type"
+  type        = string
+  default     = "ami-084e8c05825742534"
+}
+
+variable "instance_type" {
+  description = "Type of EC2 instance"
+  type        = string
+  default     = "t2.nano"
 }
