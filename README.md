@@ -1,5 +1,5 @@
 # ec2-terraform-aws-module
-The following project includes a range of AWS Services/features such as EC2 Instance, AWS Security, AWS Networking provisioned via Terraform and including the TF best practices.
+
 
 # Architecture
 
@@ -23,40 +23,58 @@ This section details the deployment and teardown of the three-tier-architecture.
 #### 1.	Clone the repo
 
     git clone https://github.com/BJWRD/ec2-terraform-aws-module
+    
+#### 2. Update the vpc_id variable to your own VPC ID - `variables.tf`
 
-#### 2.	Initialise the TF directory
+    variable "vpc_id" {
+        description = "The VPC to deploy into"
+        type        = string
+        default     = "ENTER HERE"
+    }
+    
+#### 3. Update the s3 bucket name to your own - `versions.tf`
+
+    backend "s3" {
+      bucket = "ENTER HERE"
+      key    = "terraform.tfstate"
+      region = "eu-west-2"
+    }
+
+#### 4. Region Updates
+
+Finally, update all area's of code which include the AWS Region to a region specific to your own needs/requirements.
+
+#### 5.	Initialise the TF directory
 
     terraform init
 
-#### 3.	 Ensure the terraform code is formatted and validated 
+#### 6.	 Ensure the terraform code is formatted and validated 
 
     terraform fmt && terraform validate
 
-#### 4.	Create an execution plan
+#### 7.	Create an execution plan
 
     terraform plan
 
-#### 5.	Execute terraform configuration - Creating the EC2 Infrastructure
+<img width="353" alt="image" src="https://user-images.githubusercontent.com/83971386/212928533-87314b48-7da2-4979-a6ec-28aabcc3676d.png">
+
+#### 8.	Execute terraform configuration - Creating the EC2 Infrastructure
 
     terraform apply --auto-approve
     
-ENTER IMAGE
+<img width="381" alt="image" src="https://user-images.githubusercontent.com/83971386/212929638-0f0c3e28-251b-4f69-a5af-27cbbe0b3a6c.png">
+
 
 ## Verification Steps 
 
 #### 1. Check AWS Infrastructure
-Check the Infrastructure status, by accessing the AWS Console and visually confirming that your resources have been created, following the `Terraform complete`
+Check the infrastructure deployment status, by enter the following terraform command -
 
-#### 2. Verify SSH access to the EC2 Instance 
-Search for the EC2 Service via the AWS Console search facility 
+     terraform show
 
-Enter Image
+<img width="423" alt="image" src="https://user-images.githubusercontent.com/83971386/212930070-afa1158f-75e2-4ab9-9660-146301e72ae5.png">
 
-Once the EC2 instance has been located, select it - - - 
-
-To be completed
-
-    ssh 
+Alternatively, log into the AWS Console and verify your AWS infrastructure deployment from there.
 
 ## Teardown steps
 
@@ -68,19 +86,19 @@ To be completed
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.0 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.47 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.50 |
 
 ## Providers
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.47 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | >= 4.50 |
 
 ## Modules
 
 | Name | Source | Version |
 |------|--------|---------|
-| <a name="module_eks"></a> [eks](#module\_eks) | terraform-aws-modules/ec2/aws | ~> UPDATE |
+| <a name="module_ec2"></a> [ec2](#module\_ec2) | terraform-aws-modules/ec2/aws | ~> 3.0 |
 
 ## Useful Links
 
