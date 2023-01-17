@@ -3,7 +3,7 @@
 
 # Architecture
 
-Enter Image 
+![image](https://user-images.githubusercontent.com/83971386/212936262-2dc8815f-a12c-4580-b642-5e9476a08522.png)
 
 **Note:** - The following architecture doesn't reflect all the components that are created by this template. However, it does provide a high-level overview of the core infrastructure that will be created.
 
